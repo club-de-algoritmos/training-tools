@@ -1,0 +1,3 @@
+[submodule "src/libomegaup"]
+	path = src/libomegaup
+	url = git@github.com:omegaup/libomegaup.git
