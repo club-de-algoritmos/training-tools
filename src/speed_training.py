@@ -1,3 +1,4 @@
+import argparse
 import dataclasses
 import math
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ import libomegaup.omegaup.api as api
 class Problem:
     name: str
     is_solved: bool
+    solved_at: int
     submissions: int
     penalty: int
 
@@ -63,12 +65,18 @@ def _get_speed_contest(contest_alias: str) -> Contest:
             is_solved = problem.points == 1
             submissions = problem.runs
             penalty = 0
+            solved_at = 0
             if is_solved:
                 last_submit_time = last_submit_time_per_problem[problem.alias]
-                minutes = math.floor((last_submit_time - user_start).total_seconds() / 60)
-                penalty = minutes + 20 * (submissions - 1)
+                solved_at = math.floor((last_submit_time - user_start).total_seconds() / 60)
+                penalty = solved_at + 20 * (submissions - 1)
 
-            problems.append(Problem(name=problem.alias, is_solved=is_solved, submissions=submissions, penalty=penalty))
+            problems.append(Problem(name=problem.alias,
+                                    is_solved=is_solved,
+                                    solved_at=solved_at,
+                                    submissions=submissions,
+                                    penalty=penalty,
+                                    ))
 
             total_solved += 1 if is_solved else 0
             total_submissions += submissions
@@ -110,7 +118,7 @@ def _generate_speed_contest_scoreboard(contest_alias: str) -> None:
         for problem in contestant.problems:
             if problem.submissions:
                 row1.append(str(1 if problem.is_solved else 0))
-                row2.append(f'{problem.penalty} ({problem.submissions})')
+                row2.append(f'{problem.solved_at} ({problem.submissions})')
             else:
                 row1.append('')
                 row2.append('')
@@ -122,5 +130,20 @@ def _generate_speed_contest_scoreboard(contest_alias: str) -> None:
         print(','.join(row2))
 
 
+def _main() -> None:
+    parser = argparse.ArgumentParser(
+        prog='speed_training',
+        description='Generate the scoreboard for contests that had different starts',
+    )
+    parser.add_argument('-c',
+                        '--contest',
+                        required=True,
+                        help='Alias of the contest to work with (can be obtained from the URL)')
+    args = parser.parse_args()
+
+    contest_alias = args.contest
+    _generate_speed_contest_scoreboard(contest_alias)
+
+
 if __name__ == '__main__':
-    _generate_speed_contest_scoreboard('velocidad-cas-2023-01')
+    _main()
