@@ -46,7 +46,8 @@ def _get_speed_contest(contest_alias: str) -> Contest:
     contestants: List[Contestant] = []
     for ranking in scoreboard.ranking:
         user_events = [event for event in activity.events if event.username == ranking.username]
-        user_start = min((event.time for event in user_events if event.event.name == 'open'))
+        open_events = [event.time for event in user_events if event.event.name == 'open']
+        user_start = min(open_events) if open_events else None
 
         last_submit_time_per_problem = {}
         for event in user_events:
