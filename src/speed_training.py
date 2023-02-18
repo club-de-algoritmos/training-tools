@@ -1,3 +1,4 @@
+import dataclasses
 import math
 from dataclasses import dataclass
 from typing import List
@@ -18,6 +19,8 @@ class Problem:
 @dataclass(frozen=True)
 class Contestant:
     username: str
+    name: str
+    rank: int
     total_solved: int
     total_submissions: int
     total_penalty: int
@@ -27,6 +30,7 @@ class Contestant:
 @dataclass(frozen=True)
 class Contest:
     name: str
+    problem_count: int
     contestants: List[Contestant]
 
 
@@ -71,22 +75,51 @@ def _get_speed_contest(contest_alias: str) -> Contest:
             total_penalty += penalty
 
         contestants.append(Contestant(username=ranking.username,
+                                      name=ranking.name,
+                                      rank=0,
                                       total_solved=total_solved,
                                       total_submissions=total_submissions,
                                       total_penalty=total_penalty,
                                       problems=problems,
                                       ))
 
+    # Sort and set actual ranks
     contestants.sort(key=lambda c: (-c.total_solved, c.total_penalty, c.username))
+    for i in range(len(contestants)):
+        rank = i + 1
+        contestant = contestants[i]
+        if i > 0:
+            prev_contestant = contestants[i - 1]
+            if (contestant.total_solved == prev_contestant.total_solved
+                    and contestant.total_penalty == prev_contestant.total_penalty):
+                rank = prev_contestant.rank
 
-    return Contest(name=scoreboard.title, contestants=contestants)
+        contestants[i] = dataclasses.replace(contestant, rank=rank)
+
+    return Contest(name=scoreboard.title, problem_count=len(scoreboard.problems), contestants=contestants)
 
 
 def _generate_speed_contest_scoreboard(contest_alias: str) -> None:
     contest = _get_speed_contest(contest_alias)
-    print('username,solved,runs')
+
+    problem_ids = [chr(ord('A') + i) for i in range(0, contest.problem_count)]
+    print(f'#,Username,Name,{",".join(problem_ids)},Total')
     for contestant in contest.contestants:
-        print(f'{contestant.username},{contestant.total_solved},{contestant.total_penalty}')
+        row1: List[str] = [str(contestant.rank), contestant.username, contestant.name]
+        row2: List[str] = ['', '', '']
+        for problem in contestant.problems:
+            if problem.submissions:
+                row1.append(str(1 if problem.is_solved else 0))
+                row2.append(f'{problem.penalty} ({problem.submissions})')
+            else:
+                row1.append('')
+                row2.append('')
+
+        row1.append(str(contestant.total_solved))
+        row2.append(f'{contestant.total_penalty} ({contestant.total_submissions})')
+
+        print(','.join(row1))
+        print(','.join(row2))
 
 
 if __name__ == '__main__':
