@@ -1,10 +1,12 @@
 import os
+from functools import lru_cache
 
 import libomegaup.omegaup.api as api
 
 _OMEGAUP_API_TOKEN_VAR_NAME = 'OMEGAUP_API_TOKEN'
 
 
+@lru_cache(maxsize=None)
 def get_omegaup_client() -> api.Client:
     return api.Client(api_token=os.environ[_OMEGAUP_API_TOKEN_VAR_NAME])
 
